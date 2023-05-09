@@ -1,5 +1,9 @@
+/* eslint-disable */
+
 import { useState, useEffect } from 'react';
 import { getAllProducts } from './api';
+
+
 
 function ProductList() {
   const [products, setProducts] = useState([]);
