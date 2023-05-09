@@ -1,9 +1,8 @@
 /* eslint-disable */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import '../stylesheets/Products.css'
-import Product from './Product';
-import axios from 'axios';
+
 
 function Products({ products, addToCart }) {
   const [searchTerm, setSearchTerm] = useState('');
