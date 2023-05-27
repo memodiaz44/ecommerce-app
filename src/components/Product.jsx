@@ -1,26 +1,24 @@
-/* eslint-disable */
+import React, { useContext } from 'react';
+import { UserContext } from './UserProvider';
+import Product from './Product';
 
+const Products = () => {
+  const { products, addToCart, addToCartUser } = useContext(UserContext);
 
-import React from "react";
-import '../stylesheets/Products.css'
+  return (
+    <div>
+      <h2>Products</h2>
+      {products && products.map((product) => (
+        <Product
+          key={product.id}
+          product={product}
+          addToCart={addToCart}
+          addToCartUser={addToCartUser} // Pass the addToCartUser function as a prop
+          category={product.category} // Pass the category as a prop
+        />
+      ))}
+    </div>
+  );
+};
 
-const Product = ({ product, addToCart, category }) => {
-    if (!product) {
-      return null;
-    }
-  
-    if (category && product.category !== category) {
-      return null;
-    }
-  
-    return (
-      <div className="products">
-        <img src={product.image} alt={product.name} />
-        <h3>{product.name}</h3>
-        <p>{product.price}</p>
-        <button onClick={() => addToCart(product)}>Add to cart</button>
-      </div>
-    );
-  };
-
-  export default Product;
+export default Products;

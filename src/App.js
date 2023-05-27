@@ -1,10 +1,16 @@
-import React, { useState } from 'react';
-import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
+import React, { useState, useEffect, createContext } from 'react';
+import { BrowserRouter as Router, Routes, Route, Link, Navigate } from 'react-router-dom';
 import './App.css';
+
 import Home from './components/Home';
 import Products from './components/Products';
 import Cart from './components/Cart';
+import Login from './components/Login';
+import Logout from './components/Logout';
+import Register from './components/Register';
 import NotFound from './components/NotFound';
+import Dashboard from './components/Dashboard';
+import CartUser from './components/CartUser';
 import Phone from './imagerpod/image1.png';
 import Mac from './imagerpod/image2.png';
 import Airpod from './imagerpod/image3.png';
@@ -16,7 +22,9 @@ import Ps5 from './imagerpod/image8.png';
 import SonyX from './imagerpod/image9.png';
 import Surface from './imagerpod/image10.png';
 import Xbox from './imagerpod/image11.png';
+import axios from 'axios';
 
+export const UserContext = React.createContext()
 
 
 function App() {
@@ -34,52 +42,194 @@ function App() {
     { id: 11, name: 'Xbox series x', price: 449.99, image: Xbox,  category: 'microsoft' },
   ]);
 
+  
 
+  const [user, setUser] = useState(null);
   const [cart, setCart] = useState([]);
-  console.log(setProducts);
-  const addToCart = (product) => {
+  const [cartUser, setCartUser] = useState([]);
+  const [error, setError] = useState('');
+
+
+
+  const api = axios.create({
+    baseURL: 'http://3.19.219.106:5000',
+    withCredentials: true // Send cookies along with requests
+  });
+
+
+
+
+ // ...
+
+const addToCart = (product) => {
+  if (user) {
+    // User is logged in, add to cartUser
+    setCartUser([...cartUser, product]);
+  } else {
+    // User is not logged in, add to cart
     setCart([...cart, product]);
-  };
+  }
+};
+
+// ...
+
+
+
+const addToCartUser = (product) => {
+  setCartUser([...cartUser, product]);
+
+  if (user) {
+    // User is logged in, save cart data to the backend
+    api.post('/api/cart', { product })
+      .then((response) => {
+        console.log('Cart data saved successfully:', response.data);
+      })
+      .catch((error) => {
+        console.error('Error saving cart data:', error);
+      });
+  }
+};
+
 
   const removeFromCart = (product) => {
     const newCart = cart.filter((item) => item.id !== product.id);
     setCart(newCart);
   };
 
+  const removeFromCartUser = (product) => {
+    const newCartUser = cartUser.filter((item) => item.id !== product.id);
+    setCartUser(newCartUser);
+  };
+
+
+  const handleLogin = async (email, password) => {
+    try {
+      const response = await api.post('/api/users/login', { email, password });
+      localStorage.setItem('user', JSON.stringify(response.data));
+      setUser(response.data); // Set user state to the logged-in user
+      
+      // Reset the cart
+      setCart([]);
+      
+      // Retrieve user's cart data
+      axios
+        .get('/api/cart')
+        .then((res) => {
+          setCart(res.data);
+        })
+        .catch((err) => {
+          setError('Error retrieving cart data');
+        });
+        
+      console.log('User logged in successfully:', response.data);
+    } catch (error) {
+      console.error(error);
+    }
+  };
+  
+
+  const checkLoginStatus = async () => {
+    try {
+      const response = await api.get('/api/users/checkLoginStatus');
+      console.log(response.data);
+  
+      // Store user data in local storage
+      localStorage.setItem('user', JSON.stringify(response.data));
+  
+      setUser(response.data); // Set user state to the logged-in user
+    } catch (error) {
+      setUser(null); // Set user state back to null
+    }
+  };
+  
+  const handleLogout = async () => {
+    try {
+      await api.post('/api/users/logout'); // Log out on the server-side
+      localStorage.removeItem('user');
+      setUser(null); // Set user state to null
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  useEffect(() => {
+    const checkLoginStatus = async () => {
+      try {
+        // Retrieve user data from local storage
+        const userData = localStorage.getItem('user');
+        if (userData) {
+          const user = JSON.parse(userData);
+          setUser(user); // Set user state to the logged-in user
+        } else {
+          setUser(null); // Set user state back to null
+        }
+      } catch (error) {
+        setUser(null); // Set user state back to null
+      }
+    };
+  
+    checkLoginStatus();
+  }, []);
+  
+
   return (
+
+    <UserContext.Provider value={{ user, setUser,cart, cartUser ,addToCart, removeFromCart, handleLogin, addToCartUser, handleLogout, removeFromCartUser }}>
+
     <Router>
       <div className="App">
         <header>
-          <h1 className='title'>E-SHOP</h1>
-          <div className='items'>
-          <nav>
-            <ul>
-              <li>
-                <Link to="/">Home</Link>
-              </li>
-              <li>
-                <Link to="/products">Products</Link>
-              </li>
-              <li>
-                <Link to="/cart">Cart ({cart.length})</Link>
-              </li>
-            </ul>
-          </nav>
-          </div>
+        <nav>
+          <ul>
+          {user === null ? (
+  <li>
+    <Link to="/login">Sign In</Link>
+  </li>
+) : (
+  <li>
+    <Link to="/logout">Logout</Link>
+  </li>
+  
+)}
+            <li>
+              <Link to="/">Home</Link>
+            </li>
+            <li>
+              <Link to="/products">Products</Link>
+            </li>
+            {user !== null ? (
+                  <li>
+                    <Link to="/cart-user">Cart User ({cartUser.length})</Link>
+                  </li>
+                ) : (
+            <li>
+              <Link to="/cart">Cart ({cart.length})</Link>
+            </li>
+            )}
+          </ul>
+        </nav>
+    
+          <h1 className="title">E-SHOP</h1>
+          <div className="items"></div>
         </header>
+    
         <main>
-          <Routes>
-        
-          <Route exact path="/" element={<Home products={products} />} />
+          <Routes> 
+            <Route exact path="/" element={<Home products={products} />} />
+            <Route path="/login" element={<Login handleLogin={handleLogin} />} />
+            <Route path="/logout" element={<Logout handleLogout={handleLogout} />} />
+            <Route path="/products" element={<Products products={products} addToCart={addToCart} addToCartUser={addToCartUser}/>} />
+            <Route path="/cart" element={<Cart cart={cart} user={user} products={products} removeFromCart={removeFromCart} />} />
+            <Route path="/cart-user"  element={<CartUser cartuser={cartUser} removeFromCart={removeFromCartUser}  />   }/>
 
-            <Route path="/products" element={<Products products={products} addToCart={addToCart} />} />
-            <Route path="/cart" element={<Cart cart={cart} removeFromCart={removeFromCart} />} />
-
+            <Route path="/dashboard" element={<Dashboard user={user} />} />
+            <Route path="/register" element={<Register />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </main>
       </div>
     </Router>
+    </UserContext.Provider>
   );
 }
 

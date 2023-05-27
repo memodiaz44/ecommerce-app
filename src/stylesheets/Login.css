@@ -1,0 +1,24 @@
+.already-have-account {
+    font-size: 14px;
+    margin-top: 10px;
+    text-align: center;
+  }
+  
+
+  form {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  label {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    margin-bottom: 1rem;
+  }
+  
+  input {
+    width: 100%;
+    margin-top: 0.5rem;
+  }

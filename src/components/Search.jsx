@@ -10,7 +10,7 @@ function Search() {
   const handleSubmit = async (event) => {
     event.preventDefault();
     try {
-      const response = await axios.get(`http://localhost:5000/api/search?query=${searchTerm}`);
+      const response = await axios.get(`http://3.19.219.106:5000/api/search?query=${searchTerm}`);
       setSearchResults(response.data.results);
     } catch (err) {
       console.error(err);
